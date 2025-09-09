@@ -9,11 +9,41 @@ import ir.operand.IRVariableOperand;
 import java.io.PrintStream;
 import java.util.*;
 
+
+/**
+ * Implementation information:
+ *  - do dead-code elimination algorithm using reaching defintions
+ *  - this is harder because something something something then, maximum flow algorithm or something???
+ */
+
+
 public class Demo {
     public static void main(String[] args) throws Exception {
         // Parse the IR file
         IRReader irReader = new IRReader();
-        IRProgram program = irReader.parseIRFile(args[0]);
+
+        /*
+        IRProgram: (list of functions within the program)
+
+            [IRFunction1, IRFunction2, IRFunction3 ... IRFunctionN]
+            
+        IRFunction: (list of a particular functions information)
+
+            String name
+            IRType returnType
+            List<IRVariableOperand> parameters
+            List<IRVariableOperand> variables
+            List<IRInstruction> instructions
+
+        IRInstruction: (each instructions information)
+        
+            OpCode opCode
+            IROperand[] operands (list of operands in the instruction)
+                - each IROperand has a "value" and "parent" for instruction it belongs to
+            int irLineNumber (where does this get set????)
+         */
+        IRProgram program = irReader.parseIRFile(args[0]); //Work on this --> List of functions --> List of operands, instructions, etc
+                                                            // use this as a template
 
         // Print the IR to another file
         IRPrinter filePrinter = new IRPrinter(new PrintStream(args[1]));
@@ -24,8 +54,11 @@ public class Demo {
 
         // Print all instructions that stores a constant to an array
         System.out.println("Instructions that stores a constant to an array:");
+        // Implement the algorithm here
         for (IRFunction function : program.functions) {
             for (IRInstruction instruction : function.instructions) {
+
+                //This is specific to the Demo (I think)
                 if (instruction.opCode == IRInstruction.OpCode.ARRAY_STORE) {
                     if (instruction.operands[0] instanceof IRConstantOperand) {
                         System.out.print(String.format("Line %d:", instruction.irLineNumber));
