@@ -55,64 +55,13 @@ public class Demo {
                         - where we calculate the IN and OUT sets UNTIL we reach a fixed point (IN/OUT sets are equal after 2 iterations) */
             
             //1. Calculate GEN/KILL Sets and Initialize OUT set = GEN
-            IRNode curr_node = cfg.entry_node;
-            int i = 0;
-            for (IRNode node : cfg.nodes) {
-                if (node.defined_var == null) {
-                    continue;
-                }
-                node.addToGen(node);
-                node.addToOut(node); // combine Step 2 from Lecture 3 Slide 30 into this step
-
-
-                for (IRNode nested_node : cfg.nodes) {
-                    if (nested_node.defined_var == null) {
-                        continue;
-                    }
-                    // if they both define the same variable AND they are not the same node
-                    if ((nested_node.defined_var.equals(node.defined_var)) && (!nested_node.equals(node))) {
-                        node.addToKill(nested_node);
-                    }
-                }
-            }
-            //after: GEN, KILL are intialized, IN = null/empty, OUT = GEN
+            calculateSets(cfg);
 
             //2. Calculate IN/OUT Sets
             /* Continuously traverse CFG until IN/OUT do NOT change ==> reached the Fixed Point 
             NOTE: IN[B] = OUT[P] for P in B.predecessors 
                   OUT[B] = GEN[B] U (IN[B] - KILL[B]) */
-            boolean changed = true;
-            while (changed) {
-                changed = false;
-                for (IRNode node : cfg.nodes) {
-                    //CALCULATE IN SET: loop through IMMEDIATE predecessor(s),find "their" OUT and "union" all of it together
-                    Set<IRNode> new_IN = new HashSet<>();
-                    for (IRNode pre_node : node.predecessors) {
-                        for (IRNode out_elem : pre_node.OUT) {
-                            new_IN.add(out_elem);
-                        }
-                    }
-                    node.IN = new_IN;
-
-                    //Following the instructions in Lecture 3 Slide 32, lets just directly set OUT set
-                    Set<IRNode> new_OUT = new HashSet<>(node.GEN);
-                    Set<IRNode> in_minus_kill = new HashSet<>();
-                    for (IRNode in_node : node.IN) {
-                        in_minus_kill.add(in_node);
-                    }
-                    for (IRNode kill_node : node.KILL) {
-                        in_minus_kill.remove(kill_node);
-                    }
-                    for (IRNode imk_node : in_minus_kill) {
-                        new_OUT.add(imk_node);
-                    }
-
-                    if (!node.OUT.equals(new_OUT)) {
-                        changed = true;
-                        node.OUT = new_OUT;
-                    }
-                }
-            }
+            fixedPointAlg(cfg);
 
             /* USED FOR TESTING AND CHECKING SETS for the nodes after calculating them
             for (IRNode node : cfg.nodes) {
@@ -125,82 +74,7 @@ public class Demo {
 
             //3. Mark Algorithm (Lecture 4 Slide 4)
                 //a. mark critical instructions
-            Queue<IRNode> worklist = new LinkedList<>();
-            for (IRNode node : cfg.nodes) {
-                node.is_marked = false;
-                switch(node.instruction.opCode) {
-                    case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR, RETURN -> {
-                        node.is_marked = true;
-                        worklist.add(node);
-                    }
-                    default -> {
-                        break;
-                    }
-                }
-            }
-            // With worklist created, let's implement part 2 of the Mark Algorithm
-            IRNode worklist_node = worklist.poll();
-            while (worklist_node != null) {
-                IRInstruction wn_instruction = worklist_node.instruction;
-                List<String> used_vars = worklist_node.used_vars;
-                /* worklist_node - FIND OUT what kind of instruction it is
-                    we can ignore everything accounted for in initialization of worklist 
-                    consider:   3 operand instructions:
-                                    - ASSIGN (array), ADD, SUB, MULT, DIV, AND, OR, BREQ, BRNEQ, BRLT, BRGT, BRGEQ
-                                2 operand instructions:
-                                    - ASSIGN (variable), ARRAY_STORE, ARRAY_LOAD 
-                                1 operand instruction:
-                                    - RETURN  */
-                /* What are the different formats of an instruction?
-                        1. a <- b (ASSIGN variable)
-                        2. t <- a (+,-,*,/,&,|) b 
-                        3. t <- t (+,-,*,/,&,|) a
-                        4. t <- t (+,-,*,/,&,|) t
-                        5. 
-                        */
-                
-                for (String used_var : used_vars) {
-                    for (IRNode maybe_important : worklist_node.IN) {
-                        if (maybe_important.defined_var.equals(used_var)) {
-                            if (!maybe_important.is_marked) {
-                                maybe_important.is_marked = true;
-                                worklist.add(maybe_important);
-                            }
-                        }
-                    }
-                }
-
-                /*
-                if (wn_instruction.operands.length == 3) {
-                    IROperand op1 = wn_instruction.operands[1];
-                    IROperand op2 = wn_instruction.operands[2];
-                    // find all instructions that exist with op1 or op2
-                    for (IRNode important_node : worklist_node.IN) {
-                        if (important_node.defined_var.equals(op1) || important_node.defined_var.equals(op2)) {
-                            if (!important_node.is_marked) {
-                                important_node.is_marked = true;
-                                worklist.add(important_node);
-                            }
-                        }
-                    }
-                    //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1 + ", " + op2);
-                } else if (wn_instruction.operands.length == 2) {                
-                    IROperand op1 = wn_instruction.operands[1];
-                    // find instructions with op1
-                    for (IRNode important_node : worklist_node.IN) {
-                        if (important_node.defined_var.equals(op1)) {
-                            if (!important_node.is_marked) {
-                                important_node.is_marked = true;
-                                worklist.add(important_node);
-                            }
-                        }
-                    }
-                    //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1);
-                }
-                */
-                //for every instruc "j" that
-                worklist_node = worklist.poll();
-            }
+            markAlg(cfg);
 
             /* CAUSES ConcurrentModificationException --> just add the "correct" nodes to another list
             int counter = 1;
@@ -214,13 +88,7 @@ public class Demo {
             */
 
             //4. Sweep Algorithm (Lecture 4 Slide 4) and Get the critical instructions and update the functions instructions list
-            List<IRInstruction> final_instructions = new ArrayList<>();
-            for (IRNode node : cfg.nodes) {
-                if (node.is_marked || node.instruction.opCode == IRInstruction.OpCode.LABEL) {
-                    final_instructions.add(node.instruction);
-                }
-            }
-            function.instructions = final_instructions;
+            sweepAlg(cfg, function);
         }
 
         // Print the IR to another file
@@ -283,5 +151,152 @@ public class Demo {
                 System.out.println(function.name + ": " + String.join(", ", vars));
         }
         System.out.println();
+    }
+
+    public static void calculateSets(IRcfg cfg) {
+        IRNode curr_node = cfg.entry_node;
+        for (IRNode node : cfg.nodes) {
+            if (node.defined_var == null) {
+                continue;
+            }
+            node.addToGen(node);
+            node.addToOut(node); // combine Step 2 from Lecture 3 Slide 30 into this step
+
+
+            for (IRNode nested_node : cfg.nodes) {
+                if (nested_node.defined_var == null) {
+                    continue;
+                }
+                // if they both define the same variable AND they are not the same node
+                if ((nested_node.defined_var.equals(node.defined_var)) && (!nested_node.equals(node))) {
+                    node.addToKill(nested_node);
+                }
+            }
+        }
+        //after: GEN, KILL are intialized, IN = null/empty, OUT = GEN
+    }
+
+    public static void fixedPointAlg(IRcfg cfg) {
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (IRNode node : cfg.nodes) {
+                //CALCULATE IN SET: loop through IMMEDIATE predecessor(s),find "their" OUT and "union" all of it together
+                Set<IRNode> new_IN = new HashSet<>();
+                for (IRNode pre_node : node.predecessors) {
+                    for (IRNode out_elem : pre_node.OUT) {
+                        new_IN.add(out_elem);
+                    }
+                }
+                node.IN = new_IN;
+
+                //Following the instructions in Lecture 3 Slide 32, lets just directly set OUT set
+                Set<IRNode> new_OUT = new HashSet<>(node.GEN);
+                Set<IRNode> in_minus_kill = new HashSet<>();
+                for (IRNode in_node : node.IN) {
+                    in_minus_kill.add(in_node);
+                }
+                for (IRNode kill_node : node.KILL) {
+                    in_minus_kill.remove(kill_node);
+                }
+                for (IRNode imk_node : in_minus_kill) {
+                    new_OUT.add(imk_node);
+                }
+
+                if (!node.OUT.equals(new_OUT)) {
+                    changed = true;
+                    node.OUT = new_OUT;
+                }
+            }
+        }
+    }
+
+    public static void markAlg(IRcfg cfg) {
+        Queue<IRNode> worklist = new LinkedList<>();
+        for (IRNode node : cfg.nodes) {
+            node.is_marked = false;
+            switch(node.instruction.opCode) {
+                case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR, RETURN -> {
+                    node.is_marked = true;
+                    worklist.add(node);
+                }
+                default -> {
+                    break;
+                }
+            }
+        }
+        // With worklist created, let's implement part 2 of the Mark Algorithm
+        IRNode worklist_node = worklist.poll();
+        while (worklist_node != null) {
+            IRInstruction wn_instruction = worklist_node.instruction;
+            List<String> used_vars = worklist_node.used_vars;
+            /* worklist_node - FIND OUT what kind of instruction it is
+                we can ignore everything accounted for in initialization of worklist 
+                consider:   3 operand instructions:
+                                - ASSIGN (array), ADD, SUB, MULT, DIV, AND, OR, BREQ, BRNEQ, BRLT, BRGT, BRGEQ
+                            2 operand instructions:
+                                - ASSIGN (variable), ARRAY_STORE, ARRAY_LOAD 
+                            1 operand instruction:
+                                - RETURN  */
+            /* What are the different formats of an instruction?
+                    1. a <- b (ASSIGN variable)
+                    2. t <- a (+,-,*,/,&,|) b 
+                    3. t <- t (+,-,*,/,&,|) a
+                    4. t <- t (+,-,*,/,&,|) t
+                    5. 
+                    */
+            
+            for (String used_var : used_vars) {
+                for (IRNode maybe_important : worklist_node.IN) {
+                    if (maybe_important.defined_var.equals(used_var)) {
+                        if (!maybe_important.is_marked) {
+                            maybe_important.is_marked = true;
+                            worklist.add(maybe_important);
+                        }
+                    }
+                }
+            }
+
+            /*
+            if (wn_instruction.operands.length == 3) {
+                IROperand op1 = wn_instruction.operands[1];
+                IROperand op2 = wn_instruction.operands[2];
+                // find all instructions that exist with op1 or op2
+                for (IRNode important_node : worklist_node.IN) {
+                    if (important_node.defined_var.equals(op1) || important_node.defined_var.equals(op2)) {
+                        if (!important_node.is_marked) {
+                            important_node.is_marked = true;
+                            worklist.add(important_node);
+                        }
+                    }
+                }
+                //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1 + ", " + op2);
+            } else if (wn_instruction.operands.length == 2) {                
+                IROperand op1 = wn_instruction.operands[1];
+                // find instructions with op1
+                for (IRNode important_node : worklist_node.IN) {
+                    if (important_node.defined_var.equals(op1)) {
+                        if (!important_node.is_marked) {
+                            important_node.is_marked = true;
+                            worklist.add(important_node);
+                        }
+                    }
+                }
+                //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1);
+            }
+            */
+            //for every instruc "j" that
+            worklist_node = worklist.poll();
+        }
+    }
+
+    public static void sweepAlg(IRcfg cfg, IRFunction func) {
+        List<IRInstruction> final_instructions = new ArrayList<>();
+        for (IRNode node : cfg.nodes) {
+            if (node.is_marked || node.instruction.opCode == IRInstruction.OpCode.LABEL) {
+                final_instructions.add(node.instruction);
+            }
+        }
+        func.instructions = final_instructions;
     }
 }
