@@ -45,6 +45,97 @@ public class Demo {
         IRProgram program = irReader.parseIRFile(args[0]); //Work on this --> List of functions --> List of operands, instructions, etc
                                                             // use this as a template
 
+        for (IRFunction function : program.functions) {
+            IRcfg cfg = new IRcfg(function); // we create the CFG for this function
+            // now we want to run the optimizer
+            /* Reaching Definitions Analysis 
+                    We want to go through each node and then set the GEN and KILL sets
+                    AND we want to initialize OUT = GEN and IN = null
+                    THEN we want to do a SECOND PASS:
+                        - where we calculate the IN and OUT sets UNTIL we reach a fixed point (IN/OUT sets are equal after 2 iterations) */
+            
+            //1. Calculate GEN/KILL Sets and Initialize OUT set = GEN
+            IRNode curr_node = cfg.entry_node;
+            int i = 0;
+            for (IRNode node : cfg.nodes) {
+                if (node.defined_var == null) {
+                    continue;
+                }
+                node.addToGen(node);
+                node.addToOut(node); // combine Step 2 from Lecture 3 Slide 30 into this step
+
+
+                for (IRNode nested_node : cfg.nodes) {
+                    if (nested_node.defined_var == null) {
+                        continue;
+                    }
+                    // if they both define the same variable AND they are not the same node
+                    if ((nested_node.defined_var.equals(node.defined_var)) && (!nested_node.equals(node))) {
+                        node.addToKill(nested_node);
+                    }
+                }
+            }
+            //after: GEN, KILL are intialized, IN = null/empty, OUT = GEN
+
+            //2. Calculate IN/OUT Sets
+            /* Continuously traverse CFG until IN/OUT do NOT change ==> reached the Fixed Point 
+            NOTE: IN[B] = OUT[P] for P in B.predecessors 
+                  OUT[B] = GEN[B] U (IN[B] - KILL[B]) */
+            boolean changed = true;
+            while (changed) {
+                changed = false;
+                for (IRNode node : cfg.nodes) {
+                    //CALCULATE IN SET: loop through IMMEDIATE predecessor(s),find "their" OUT and "union" all of it together
+                    Set<IRNode> new_IN = new HashSet<>();
+                    for (IRNode pre_node : node.predecessors) {
+                        for (IRNode out_elem : pre_node.OUT) {
+                            new_IN.add(out_elem);
+                        }
+                    }
+                    node.IN = new_IN;
+
+                    //Following the instructions in Lecture 3 Slide 32, lets just directly set OUT set
+                    Set<IRNode> new_OUT = new HashSet<>(node.GEN);
+                    Set<IRNode> in_minus_kill = new HashSet<>();
+                    for (IRNode in_node : node.IN) {
+                        in_minus_kill.add(in_node);
+                    }
+                    for (IRNode kill_node : node.KILL) {
+                        in_minus_kill.remove(kill_node);
+                    }
+                    for (IRNode imk_node : in_minus_kill) {
+                        new_OUT.add(imk_node);
+                    }
+
+                    if (!node.OUT.equals(new_OUT)) {
+                        changed = true;
+                        node.OUT = new_OUT;
+                    }
+                }
+            }
+
+            //3. Mark Algorithm (Lecture 4 Slide 4)
+                //a. mark critical instructions
+            Queue<IRNode> worklist = new LinkedList<>();
+            for (IRNode node : cfg.nodes) {
+                node.is_marked = false;
+                switch(node.instruction.opCode) {
+                    case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR -> {
+                        node.is_marked = true;
+                        worklist.add(node);
+                    }
+
+                    default -> {
+                        break;
+                    }
+                }
+            }
+            // With worklist created, let's implement part 2 of the Mark Algorithm
+
+
+            //4. Sweep Algorithm (Lecture 4 Slide 4)
+        }
+
         // Print the IR to another file
         IRPrinter filePrinter = new IRPrinter(new PrintStream(args[1]));
         filePrinter.printProgram(program);
@@ -55,9 +146,8 @@ public class Demo {
         // Print all instructions that stores a constant to an array
         System.out.println("Instructions that stores a constant to an array:");
         // Implement the algorithm here
-        for (IRFunction function : program.functions) {
-            for (IRInstruction instruction : function.instructions) {
-
+        for (IRFunction function : program.functions) { // for each function in our program
+            for (IRInstruction instruction : function.instructions) { // we go through every instruction
                 //This is specific to the Demo (I think)
                 if (instruction.opCode == IRInstruction.OpCode.ARRAY_STORE) {
                     if (instruction.operands[0] instanceof IRConstantOperand) {

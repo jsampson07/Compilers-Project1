@@ -1,71 +1,75 @@
-import ir.*;
-import ir.datatype.*;
-import ir.operand.*;
+import ir.IRInstruction;
+import ir.operand.IRVariableOperand;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.ArrayList;
 
 public class IRNode {
-
-    public static class Definition {
-        public String varName;
-        public int lineNum; //uniquely identifies every instruction (all on diff. lines)
-
-        //I want to store varName and lineNumber as each entry in a set
-        public Definition(String varName, int lineNum) {
-            this.varName = varName;
-            this.lineNum = lineNum;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            Definition other = (Definition) obj;
-            return lineNum == other.lineNum && varName.equals(other.varName);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(lineNum, varName);
-        }
-    }
     //Each node is a list of instrucs and has predecessors/successors
     //Every node/block also has its own GEN, KILL, etc sets
         //these sets use HashSet, and use varName and lineNumber to ensure uniqueness
-    List<IRInstruction> instructions;
-    List<IRNode> predecessors;
-    List<IRNode> successors;
-    Set<Definition> GEN = new HashSet<>();
-    Set<Definition> KILL = new HashSet<>();
-    Set<Definition> IN = new HashSet<>();
-    Set<Definition> OUT = new HashSet<>();
+    public IRInstruction instruction;
+    public String defined_var = null;
+    public List<IRNode> predecessors = new ArrayList<>();
+    public List<IRNode> successors = new ArrayList<>();
+    public Set<IRNode> GEN = new HashSet<>();
+    public Set<IRNode> KILL = new HashSet<>();
+    public Set<IRNode> IN = new HashSet<>();
+    public Set<IRNode> OUT = new HashSet<>();
+    public boolean is_marked = false;
 
 
     // If we initialize without any parameters, just leave everything empty
+
     public IRNode() {}
 
+    public IRNode(IRInstruction instruction) {
+        this.instruction = instruction;
+        switch(instruction.opCode) {
+            case ASSIGN, ADD, SUB, MULT, DIV, AND, OR, CALLR, ARRAY_LOAD -> {
+                this.defined_var = ((IRVariableOperand) instruction.operands[0]).getName();
+            }
+            default -> {
+                break;
+            }
+        }
+    }
+
+    /* we do not need this, we set predecessors and successors after we have created the node, we do not know @ point of initialization
     public IRNode(List<IRInstruction> instructions, List<IRNode> predecessors, List<IRNode> successors) {
         this.instructions = instructions;
         this.predecessors = predecessors;
         this.successors = successors;
     }
+    */
 
-    public void addToGen(String vN, int lN) {
-        this.GEN.add(new Definition(vN, lN));
+   public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if ((o == null) || (getClass() != o.getClass())) {
+            return false;
+        }
+        IRNode irNode = (IRNode) o;
+        return this.instruction.irLineNumber == irNode.instruction.irLineNumber;
     }
-    public void addToKill(String vN, int lN) {
-        this.KILL.add(new Definition(vN, lN));
+
+    public int hashCode() {
+        return Objects.hash(this.instruction.irLineNumber);
     }
-    public void addToIn(String vN, int lN) {
-        this.IN.add(new Definition(vN, lN));
+
+    public void addToGen(IRNode node) {
+        this.GEN.add(node);
     }
-    public void addToOut(String vN, int lN) {
-        this.OUT.add(new Definition(vN, lN));
+    public void addToKill(IRNode node) {
+        this.KILL.add(node);
+    }
+    public void addToIn(IRNode node) {
+        this.IN.add(node);
+    }
+    public void addToOut(IRNode node) {
+        this.OUT.add(node);
     }
 }
