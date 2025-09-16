@@ -23,3 +23,12 @@ public abstract class IROperand {
     }
 
 }
+
+/**
+ * There are:
+ * IRConstantOperand
+ * IRFunctionOperand
+ * IRLabelOperand
+ * IRVariableOperand
+ *  - IRType (int, array, float)
+ */

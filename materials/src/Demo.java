@@ -114,26 +114,108 @@ public class Demo {
                 }
             }
 
+            /* USED FOR TESTING AND CHECKING SETS for the nodes after calculating them
+            for (IRNode node : cfg.nodes) {
+                System.out.println("GEN[node]: " + node.GEN);
+                System.out.println("KILL[node]: " + node.KILL);
+                System.out.println("IN[node]: " + node.IN);
+                System.out.println("OUT[node]: " + node.OUT);
+            }
+            */
+
             //3. Mark Algorithm (Lecture 4 Slide 4)
                 //a. mark critical instructions
             Queue<IRNode> worklist = new LinkedList<>();
             for (IRNode node : cfg.nodes) {
                 node.is_marked = false;
                 switch(node.instruction.opCode) {
-                    case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR -> {
+                    case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR, RETURN -> {
                         node.is_marked = true;
                         worklist.add(node);
                     }
-
                     default -> {
                         break;
                     }
                 }
             }
             // With worklist created, let's implement part 2 of the Mark Algorithm
+            IRNode worklist_node = worklist.poll();
+            while (worklist_node != null) {
+                IRInstruction wn_instruction = worklist_node.instruction;
+                List<String> used_vars = worklist_node.used_vars;
+                /* worklist_node - FIND OUT what kind of instruction it is
+                    we can ignore everything accounted for in initialization of worklist 
+                    consider:   3 operand instructions:
+                                    - ASSIGN (array), ADD, SUB, MULT, DIV, AND, OR, BREQ, BRNEQ, BRLT, BRGT, BRGEQ
+                                2 operand instructions:
+                                    - ASSIGN (variable), ARRAY_STORE, ARRAY_LOAD 
+                                1 operand instruction:
+                                    - RETURN  */
+                /* What are the different formats of an instruction?
+                        1. a <- b (ASSIGN variable)
+                        2. t <- a (+,-,*,/,&,|) b 
+                        3. t <- t (+,-,*,/,&,|) a
+                        4. t <- t (+,-,*,/,&,|) t
+                        5. 
+                        */
+                
+                for (String used_var : used_vars) {
+                    for (IRNode maybe_important : worklist_node.IN) {
+                        if (maybe_important.defined_var.equals(used_var)) {
+                            if (!maybe_important.is_marked) {
+                                maybe_important.is_marked = true;
+                                worklist.add(maybe_important);
+                            }
+                        }
+                    }
+                }
 
+                /*
+                if (wn_instruction.operands.length == 3) {
+                    IROperand op1 = wn_instruction.operands[1];
+                    IROperand op2 = wn_instruction.operands[2];
+                    // find all instructions that exist with op1 or op2
+                    for (IRNode important_node : worklist_node.IN) {
+                        if (important_node.defined_var.equals(op1) || important_node.defined_var.equals(op2)) {
+                            if (!important_node.is_marked) {
+                                important_node.is_marked = true;
+                                worklist.add(important_node);
+                            }
+                        }
+                    }
+                    //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1 + ", " + op2);
+                } else if (wn_instruction.operands.length == 2) {                
+                    IROperand op1 = wn_instruction.operands[1];
+                    // find instructions with op1
+                    for (IRNode important_node : worklist_node.IN) {
+                        if (important_node.defined_var.equals(op1)) {
+                            if (!important_node.is_marked) {
+                                important_node.is_marked = true;
+                                worklist.add(important_node);
+                            }
+                        }
+                    }
+                    //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1);
+                }
+                */
+                //for every instruc "j" that
+                worklist_node = worklist.poll();
+            }
+            int counter = 1;
+            for (IRNode critical_nodes : cfg.nodes) {
+                if (critical_nodes.is_marked) {
+                    System.out.println(counter);
+                    counter++;
+                    System.out.println(critical_nodes.toString());
+                }
+            }
 
             //4. Sweep Algorithm (Lecture 4 Slide 4)
+            for (IRNode node : cfg.nodes) {
+                if (!node.is_marked) {
+                    cfg.nodes.remove(node);
+                }
+            }
         }
 
         // Print the IR to another file

@@ -12,6 +12,7 @@ public class IRNode {
         //these sets use HashSet, and use varName and lineNumber to ensure uniqueness
     public IRInstruction instruction;
     public String defined_var = null;
+    public List<String> used_vars = new ArrayList<>();
     public List<IRNode> predecessors = new ArrayList<>();
     public List<IRNode> successors = new ArrayList<>();
     public Set<IRNode> GEN = new HashSet<>();
@@ -33,6 +34,19 @@ public class IRNode {
             }
             default -> {
                 break;
+            }
+        }
+        for (int i = 1; i < this.instruction.operands.length; i++) {
+            if (instruction.operands[i] instanceof IRVariableOperand) {
+                used_vars.add(((IRVariableOperand) instruction.operands[i]).getName());
+            }
+        }
+        // we need these special cases because the first operand is a use
+        switch(instruction.opCode) {
+            case ARRAY_STORE, RETURN -> {
+                if (instruction.operands[0] instanceof IRVariableOperand) {
+                    used_vars.add(((IRVariableOperand) instruction.operands[0]).getName());
+                }
             }
         }
     }
@@ -58,6 +72,17 @@ public class IRNode {
 
     public int hashCode() {
         return Objects.hash(this.instruction.irLineNumber);
+    }
+
+    public String toString() {
+        if (this.instruction.operands.length == 3) {
+            return this.instruction.opCode.toString() + " " + this.instruction.operands[0] + " <- " + this.instruction.operands[1] + ", " + this.instruction.operands[2];
+        } else if (this.instruction.operands.length == 2) {
+            return this.instruction.opCode.toString() + " " + this.instruction.operands[0] + " <- " + this.instruction.operands[1];
+        } else if (this.instruction.operands.length == 1) {
+            return this.instruction.opCode.toString() + " " + this.instruction.operands[0];
+        }
+        return "";
     }
 
     public void addToGen(IRNode node) {
