@@ -201,6 +201,8 @@ public class Demo {
                 //for every instruc "j" that
                 worklist_node = worklist.poll();
             }
+
+            /* CAUSES ConcurrentModificationException --> just add the "correct" nodes to another list
             int counter = 1;
             for (IRNode critical_nodes : cfg.nodes) {
                 if (critical_nodes.is_marked) {
@@ -209,13 +211,16 @@ public class Demo {
                     System.out.println(critical_nodes.toString());
                 }
             }
+            */
 
-            //4. Sweep Algorithm (Lecture 4 Slide 4)
+            //4. Sweep Algorithm (Lecture 4 Slide 4) and Get the critical instructions and update the functions instructions list
+            List<IRInstruction> final_instructions = new ArrayList<>();
             for (IRNode node : cfg.nodes) {
-                if (!node.is_marked) {
-                    cfg.nodes.remove(node);
+                if (node.is_marked || node.instruction.opCode == IRInstruction.OpCode.LABEL) {
+                    final_instructions.add(node.instruction);
                 }
             }
+            function.instructions = final_instructions;
         }
 
         // Print the IR to another file
