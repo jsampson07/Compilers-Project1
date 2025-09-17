@@ -222,21 +222,6 @@ public class Demo {
         while (worklist_node != null) {
             IRInstruction wn_instruction = worklist_node.instruction;
             List<String> used_vars = worklist_node.used_vars;
-            /* worklist_node - FIND OUT what kind of instruction it is
-                we can ignore everything accounted for in initialization of worklist 
-                consider:   3 operand instructions:
-                                - ASSIGN (array), ADD, SUB, MULT, DIV, AND, OR, BREQ, BRNEQ, BRLT, BRGT, BRGEQ
-                            2 operand instructions:
-                                - ASSIGN (variable), ARRAY_STORE, ARRAY_LOAD 
-                            1 operand instruction:
-                                - RETURN  */
-            /* What are the different formats of an instruction?
-                    1. a <- b (ASSIGN variable)
-                    2. t <- a (+,-,*,/,&,|) b 
-                    3. t <- t (+,-,*,/,&,|) a
-                    4. t <- t (+,-,*,/,&,|) t
-                    5. 
-                    */
             
             for (String used_var : used_vars) {
                 for (IRNode maybe_important : worklist_node.IN) {

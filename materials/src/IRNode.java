@@ -74,6 +74,7 @@ public class IRNode {
         return Objects.hash(this.instruction.irLineNumber);
     }
 
+    // For testing purposes
     public String toString() {
         if (this.instruction.operands.length == 3) {
             return this.instruction.opCode.toString() + " " + this.instruction.operands[0] + " <- " + this.instruction.operands[1] + ", " + this.instruction.operands[2];
