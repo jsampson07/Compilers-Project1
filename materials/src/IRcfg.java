@@ -91,14 +91,6 @@ public class IRcfg {
                         IRNode target_node = irInstrucToNode.get(next_instruc.irLineNumber);
                         connectNodes(curr_node, target_node);
                     }
-
-                    /* 
-                    if (i + 1 < instructions.size()) {
-    IRInstruction next_instruction = instructions.get(i + 1);
-    IRNode target_node = irInstrucToNode.get(next_instruction.irLineNumber);
-    connectNodes(curr_node, target_node);
-}
-                     */
                 }
             }
             this.nodes.add(curr_node); // add this to the list of nodes after all info needed for it
