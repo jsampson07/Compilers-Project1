@@ -1,3 +1,4 @@
 *.txt
 materials/build/*
 *.ir
+*.out

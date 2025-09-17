@@ -12,7 +12,7 @@ I want my CFG to contain...
 */
 
 public class IRcfg {
-    public IRNode entry_node; // the entry node for the CFG (i.e. head)
+    //public IRNode entry_node; // the entry node for the CFG (i.e. head)
     public List<IRNode> nodes = new ArrayList<>(); // list of nodes in the graph (each are individual instrucs; in order when "executing" code)
 
     public IRcfg() {}

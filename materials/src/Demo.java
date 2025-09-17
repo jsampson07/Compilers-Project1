@@ -9,14 +9,6 @@ import ir.operand.IRVariableOperand;
 import java.io.PrintStream;
 import java.util.*;
 
-
-/**
- * Implementation information:
- *  - do dead-code elimination algorithm using reaching defintions
- *  - this is harder because something something something then, maximum flow algorithm or something???
- */
-
-
 public class Demo {
     public static void main(String[] args) throws Exception {
         // Parse the IR file
@@ -154,7 +146,7 @@ public class Demo {
     }
 
     public static void calculateSets(IRcfg cfg) {
-        IRNode curr_node = cfg.entry_node;
+        //IRNode curr_node = cfg.entry_node;
         for (IRNode node : cfg.nodes) {
             if (node.defined_var == null) {
                 continue;
