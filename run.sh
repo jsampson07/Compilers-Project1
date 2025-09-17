@@ -5,4 +5,4 @@
 # an input ir file as 
 # This script should output an optimized ir file named "out.ir"
 
-java -cp build Demo $1 out.ir
+java -cp build Demo $1 $2
