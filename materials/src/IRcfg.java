@@ -73,12 +73,14 @@ public class IRcfg {
                     //if we were to take the branch
                     String branch_label = ((IRLabelOperand) curr_instruction.operands[0]).getName();
                     IRNode target_node1 = irLabelToNode.get(branch_label);
-                    //if we didn't take the branch, we just go to the next instruction
-                    //if (i + 1 < instructions.size()) {}
-                    IRInstruction next_instruc = instructions.get(i + 1);
-                    IRNode target_node2 = irInstrucToNode.get(next_instruc.irLineNumber); //curr instruc, we just want next instruc (node)
                     connectNodes(curr_node, target_node1);
-                    connectNodes(curr_node, target_node2);
+                    //if we didn't take the branch, we just go to the next instruction
+
+                    if (i + 1 < instructions.size()) {
+                        IRInstruction next_instruc = instructions.get(i + 1);
+                        IRNode target_node2 = irInstrucToNode.get(next_instruc.irLineNumber); //curr instruc, we just want next instruc (node)
+                        connectNodes(curr_node, target_node2);
+                    }
                 }
                 case RETURN -> {
                     break;

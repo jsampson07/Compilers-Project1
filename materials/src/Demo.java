@@ -216,7 +216,7 @@ public class Demo {
         for (IRNode node : cfg.nodes) {
             node.is_marked = false;
             switch(node.instruction.opCode) {
-                case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR, RETURN -> {
+                case GOTO, BREQ, BRNEQ, BRLT, BRGT, BRGEQ, CALL, CALLR, RETURN, ARRAY_STORE -> {
                     node.is_marked = true;
                     worklist.add(node);
                 }
