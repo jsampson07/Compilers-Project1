@@ -87,9 +87,6 @@ public class IRNode {
     public void addToKill(IRNode node) {
         this.KILL.add(node);
     }
-    public void addToIn(IRNode node) {
-        this.IN.add(node);
-    }
     public void addToOut(IRNode node) {
         this.OUT.add(node);
     }
