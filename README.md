@@ -1,13 +1,13 @@
 # CS 4240 Compilers and Interpreters (Spring 2025) Project 1
 
-# 📝 Tiger-IR Optimizer (CS 4240 Project 1)
+# Tiger-IR Optimizer (CS 4240 Project 1)
 
 This project was completed as part of **CS 4240: Compilers & Interpreters** at Georgia Tech. Note that much of the codebase was created by those who help run the course.
 The goal was to build a **middle-end optimizer** for the Tiger-IR intermediate representation, targeting the MIPS32 architecture.
 
 ---
 
-## 📖 Overview
+## Overview
 
 - **Language:** Tiger (pedagogic language) → Tiger-IR → Optimized IR  
 - **Focus:** Static analysis & optimization of IR code  
@@ -16,7 +16,7 @@ The goal was to build a **middle-end optimizer** for the Tiger-IR intermediate r
 
 ---
 
-## ⚙️ Features
+## Features
 
 - Reads Tiger-IR text input  
 - Performs static analysis & optimization passes  
