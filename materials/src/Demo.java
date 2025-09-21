@@ -14,28 +14,8 @@ public class Demo {
         // Parse the IR file
         IRReader irReader = new IRReader();
 
-        /*
-        IRProgram: (list of functions within the program)
-
-            [IRFunction1, IRFunction2, IRFunction3 ... IRFunctionN]
-            
-        IRFunction: (list of a particular functions information)
-
-            String name
-            IRType returnType
-            List<IRVariableOperand> parameters
-            List<IRVariableOperand> variables
-            List<IRInstruction> instructions
-
-        IRInstruction: (each instructions information)
-        
-            OpCode opCode
-            IROperand[] operands (list of operands in the instruction)
-                - each IROperand has a "value" and "parent" for instruction it belongs to
-            int irLineNumber (where does this get set????)
-         */
-        IRProgram program = irReader.parseIRFile(args[0]); //Work on this --> List of functions --> List of operands, instructions, etc
-                                                            // use this as a template
+        /* IRProgram -> IRFunction -> (IRVariableOperand and IRInstruction) -> [IRInstruction] ==> (OpCode, IROperand) */
+        IRProgram program = irReader.parseIRFile(args[0]); //Work on this object
 
         for (IRFunction function : program.functions) {
             IRcfg cfg = new IRcfg(function); // we create the CFG for this function
@@ -50,9 +30,6 @@ public class Demo {
             calculateSets(cfg);
 
             //2. Calculate IN/OUT Sets
-            /* Continuously traverse CFG until IN/OUT do NOT change ==> reached the Fixed Point 
-            NOTE: IN[B] = OUT[P] for P in B.predecessors 
-                  OUT[B] = GEN[B] U (IN[B] - KILL[B]) */
             fixedPointAlg(cfg);
 
             /* USED FOR TESTING AND CHECKING SETS for the nodes after calculating them
@@ -64,22 +41,11 @@ public class Demo {
             }
             */
 
-            //3. Mark Algorithm (Lecture 4 Slide 4)
+            //3. Mark Algorithm
                 //a. mark critical instructions
             markAlg(cfg);
 
-            /* CAUSES ConcurrentModificationException --> just add the "correct" nodes to another list
-            int counter = 1;
-            for (IRNode critical_nodes : cfg.nodes) {
-                if (critical_nodes.is_marked) {
-                    System.out.println(counter);
-                    counter++;
-                    System.out.println(critical_nodes.toString());
-                }
-            }
-            */
-
-            //4. Sweep Algorithm (Lecture 4 Slide 4) and Get the critical instructions and update the functions instructions list
+            //4. Sweep Algorithm and get the critical instructions and update the functions instructions list
             sweepAlg(cfg, function);
         }
 
@@ -146,13 +112,12 @@ public class Demo {
     }
 
     public static void calculateSets(IRcfg cfg) {
-        //IRNode curr_node = cfg.entry_node;
         for (IRNode node : cfg.nodes) {
-            if (node.defined_var == null) {
+            if (node.defined_var == null) { // if not a defintion skip it
                 continue;
             }
             node.addToGen(node);
-            node.addToOut(node); // combine Step 2 from Lecture 3 Slide 30 into this step
+            node.addToOut(node); //OUT = GEN
 
 
             for (IRNode nested_node : cfg.nodes) {
@@ -169,6 +134,9 @@ public class Demo {
     }
 
     public static void fixedPointAlg(IRcfg cfg) {
+        /* Continuously traverse CFG until IN/OUT do NOT change ==> reached the Fixed Point 
+            NOTE: IN[B] = OUT[P] for P in B.predecessors 
+                  OUT[B] = GEN[B] U (IN[B] - KILL[B]) */
         boolean changed = true;
         while (changed) {
             changed = false;
@@ -220,7 +188,6 @@ public class Demo {
         // With worklist created, let's implement part 2 of the Mark Algorithm
         IRNode worklist_node = worklist.poll();
         while (worklist_node != null) {
-            IRInstruction wn_instruction = worklist_node.instruction;
             List<String> used_vars = worklist_node.used_vars;
             
             for (String used_var : used_vars) {
@@ -233,36 +200,6 @@ public class Demo {
                     }
                 }
             }
-
-            /*
-            if (wn_instruction.operands.length == 3) {
-                IROperand op1 = wn_instruction.operands[1];
-                IROperand op2 = wn_instruction.operands[2];
-                // find all instructions that exist with op1 or op2
-                for (IRNode important_node : worklist_node.IN) {
-                    if (important_node.defined_var.equals(op1) || important_node.defined_var.equals(op2)) {
-                        if (!important_node.is_marked) {
-                            important_node.is_marked = true;
-                            worklist.add(important_node);
-                        }
-                    }
-                }
-                //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1 + ", " + op2);
-            } else if (wn_instruction.operands.length == 2) {                
-                IROperand op1 = wn_instruction.operands[1];
-                // find instructions with op1
-                for (IRNode important_node : worklist_node.IN) {
-                    if (important_node.defined_var.equals(op1)) {
-                        if (!important_node.is_marked) {
-                            important_node.is_marked = true;
-                            worklist.add(important_node);
-                        }
-                    }
-                }
-                //System.out.println(wn_instruction.opCode.toString() + " " + wn_instruction.operands[0] + " <- " + op1);
-            }
-            */
-            //for every instruc "j" that
             worklist_node = worklist.poll();
         }
     }

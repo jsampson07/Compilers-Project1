@@ -48,16 +48,11 @@ public class IRNode {
                     used_vars.add(((IRVariableOperand) instruction.operands[0]).getName());
                 }
             }
+            default -> {
+                break;
+            }
         }
     }
-
-    /* we do not need this, we set predecessors and successors after we have created the node, we do not know @ point of initialization
-    public IRNode(List<IRInstruction> instructions, List<IRNode> predecessors, List<IRNode> successors) {
-        this.instructions = instructions;
-        this.predecessors = predecessors;
-        this.successors = successors;
-    }
-    */
 
    public boolean equals(Object o) {
         if (this == o) {
